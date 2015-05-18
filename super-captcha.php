@@ -40,54 +40,53 @@ class newSuperCaptcha
 		add_shortcode				( 'supercaptcha',					array ( &$this, 'scshortcode') );
 		if( esc_attr( get_option('secure_register') ) == true )
 			{
-			// Hooking into the registration forms
+			// hooking into the registration forms
 			if(function_exists('bp_include'))
 				{
+				// checking for buddypress
 				add_action('bp_before_registration_submit_buttons',		array( &$this, 'signup_bpform' ) );
 				add_action('bp_signup_validate',						array( &$this, 'signup_bppost') );
 				}
 			elseif(function_exists('signup_extra_fields'))
 				{
+				// checking for legacy buddypress
 				add_action('signup_extra_fields',						array( &$this, 'signup_form' ) );
 				add_filter('wpmu_validate_user_signup',					array( &$this, 'signup_post') );
 				} else {
+				// then it must be regular wordpress
 				add_action('register_form',								array( &$this, 'signup_form' ) );
 				add_filter('registration_errors',						array( &$this, 'signup_post') );
 				}
 			}
 		if( esc_attr( get_option('secure_blog') ) == true )
 			{
-			//Hooking into the blog creation forms.
+			// hooking into the blog creation forms.
 			add_filter		('wpmu_validate_blog_signup',				array( &$this, 'signup_post' ) );
 			add_action		('signup_blogform',							array( &$this, 'signup_bpform' ) );		
 			}
 		if( esc_attr( get_option('secure_comments') ) == true )
 			{
-			//Hooking into comments.
+			// hooking into comments.
 			add_action			('comment_form_after_fields', 			array( &$this, 'signup_form' ) );
 			add_action			('preprocess_comment',					array( &$this, 'comments_submit' ) );
 			}
 		if( esc_attr( get_option('secure_login') ) == true )
 			{
-			//Hooking into the login form.
+			// hooking into the login form.
 			add_action		('login_form',								array( &$this, 'signup_form' ) );
 			add_filter		('login_head',								array( &$this, 'login_post' ) );
 			}
 		if( esc_attr( get_option('pro_notice') ) != true )
 			{
-			//A little shameless advertising.
-			if ( is_multisite() )
-				{
-				add_action('all_admin_notices', 				   		array(&$this,'pro_notice'));
-				} else {
-				add_action('admin_notices', 				           	array(&$this,'pro_notice'));
-				}
+			// notifies user of pro updates
+			add_action('admin_notices', 				           		array(&$this,'pro_notice'));
 			}
 		if( esc_attr( get_option('sc_setup') ) != $this->scVersion )
 			{
-			//Alerts the admin that the version has changed and they may need to reconfigure.
+			// alerts the admin that the version has changed and they may need to reconfigure.
 			add_action('all_admin_notices', 							array( &$this, 'first_setup' ) );
 			}
+		// we have a report widget we're adding here.  It can be disabled through the screen options.
 		add_action('wp_dashboard_setup',								array( &$this, 'sc_widgets' ) );
 		}
 
@@ -101,6 +100,7 @@ class newSuperCaptcha
 		}
 	function register_scsession()
 		{
+		// gracefully starting WordPress Sessions (necessary for remembering the codes)
 		if( !session_id() )
 			{
 			session_start();
@@ -108,7 +108,17 @@ class newSuperCaptcha
 		}
 	function adminOptions()
 		{
-		// Some HTML
+		/********************************************************************\
+		// To easily assemble an admin page:                                \\
+		// <?php                                                            \\
+		// 	$this->adminHeader();                                           \\
+		// 	$this->adminSideBar();                                          \\
+		// ?>                                                               \\
+		// <h3>Title</h3>                                                   \\
+		// <?php $this->displayNav(); ?>                                    \\
+		// Content                                                          \\
+		// $this->adminFooter();                                            \\
+		\********************************************************************/
 		if($this->getChecksum() == true)
 			{
 			//echo $this->getChecksum();
@@ -116,11 +126,12 @@ class newSuperCaptcha
 			} else {
 			echo 'PROBLEM';
 			}
-		$thisresult = null;
-		$thisresulta = null;
-		$thisresultb = null;
+		$thisresult = null;  // innitializing $_POST data
+		$thisresulta = null;  // innitializing $_POST data
+		$thisresultb = null;  // innitializing $_POST data
 		if($_REQUEST['p'] == 'log')
 			{
+			// Show the logs
 			$this->adminHeader();
 			$this->adminSideBar();
 			?>
@@ -132,6 +143,7 @@ class newSuperCaptcha
 			$this->format_log(20);
 			$this->adminFooter();
 			} else {
+			// Show the admin page
 			$this->adminHeader();
 			$this->adminSideBar();
 			?>
@@ -408,7 +420,7 @@ class newSuperCaptcha
 	function getCaptchaImage()
 		{
 		?>
-		<iframe src="http://spam.goldsborowebdevelopment.com/verify/display.php?checksum=<?php echo(get_option('settings_checksum')); ?>&uid=<?php echo(urlencode(site_url())); ?>&sid=<?php echo(session_id()); ?>&f=<?php echo(esc_attr( get_option('font') )); ?>&bg=<?php echo(esc_attr( get_option('background') )); ?>&dis=<?php echo(esc_attr( get_option('distortion') )); ?><?php if( esc_attr( get_option('font_size') ) != false ) : ?>&fs=<?php echo(esc_attr( get_option('font_size') )); ?><?php endif; ?>" style="border:none;width:262px;height:150px;">
+		<iframe src="https://spam.goldsborowebdevelopment.com/verify/display.php?checksum=<?php echo(get_option('settings_checksum')); ?>&uid=<?php echo(urlencode(site_url())); ?>&sid=<?php echo(session_id()); ?>&f=<?php echo(esc_attr( get_option('font') )); ?>&bg=<?php echo(esc_attr( get_option('background') )); ?>&dis=<?php echo(esc_attr( get_option('distortion') )); ?><?php if( esc_attr( get_option('font_size') ) != false ) : ?>&fs=<?php echo(esc_attr( get_option('font_size') )); ?><?php endif; ?>" style="border:none;width:262px;height:150px;">
 				
 		</iframe>
 		<?php
@@ -1110,7 +1122,7 @@ class newSuperCaptcha
 		Making the choice to go Pro with Super Captcha not only entitles you to better security, automated blocking, and auto-learning bot behaviors,
 		but you help us keep the lights on and feed a few of our developers.  If only 1% of our users go Pro for one year, this service could sustain
 		itself for another 20 years; though we would prefer hiring more guys to make this software even better!<br /><br />
-		<a href="admin.php?page=new-super-captcha%2Fnew-super-captcha.php">Dismiss</a> <a href="https://my.goldsborowebdevelopment.com/cart.php?a=add&pid=70&sld=whmcs&tld=<?php echo $_SERVER['HTTP_HOST']; ?>" target="_blank" class="button" style="float:right;margin-top:-5px;">Try Pro Free &raquo;</a>
+		<a href="admin.php?page=super-captcha%2Fsuper-captcha.php">Dismiss</a> <a href="https://my.goldsborowebdevelopment.com/cart.php?a=add&pid=70&sld=whmcs&tld=<?php echo $_SERVER['HTTP_HOST']; ?>" target="_blank" class="button" style="float:right;margin-top:-5px;">Try Pro Free &raquo;</a>
 		
 		</p></div>
 		<?php
